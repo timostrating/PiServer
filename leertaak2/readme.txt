@@ -1,12 +1,10 @@
-Unwdmi Weergegevens Generator 2.2
+Unwdmi Weergegevens Generator 1.0b
 ----------------------------------
 
 Bestand:                        Beschrijving:
 full_stations_data.dat          Weersgegevens gegevens voor de generator. Dit
                                 bestand moet zich in dezelfde map bevinden als
                                 de generator.
-station_country_data.dat	Landsgegevens van de stations. Dit bestand moet
-				zich in dezelfde map bevinden als de generator.
 output.xml                      Voorbeeld van een XML-bestand zoals gestuurd
                                 wordt door de generator. Bevat uitleg bij de
                                 elementen.
