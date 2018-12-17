@@ -1,5 +1,7 @@
 import java.net.*;
 import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
 //import java.util.concurrent.*;
 
 class WorkerThread implements Runnable  {
@@ -11,33 +13,54 @@ class WorkerThread implements Runnable  {
 
 	public void run() {
 		try {
-			char[] s;
+			String s;
 			System.err.println("Worker thread started");
-			
-			//lets check if we already accepted maximum number of connections
-			Server.mijnSemafoor.probeer();
 
-			long startTime = System.currentTimeMillis();
+//			long startTime = System.currentTimeMillis();
 			BufferedReader bin = new BufferedReader(new InputStreamReader(connection.getInputStream()));
 
-			int counter = 0;
-			while ((s = bin.readLine().toCharArray()) != null) {
-				counter += 1;
+//			int counter = 0;
+			List<String> data = new ArrayList<String>();
+			while ((s = bin.readLine()) != null) {
 
-				if (s.equals("\t<MEASUREMENT>")){ counter = 0; }
-				else if (s.equals("\t</MEASUREMENT>")){}
+				int start =0;
+				int end=0;
+
+				int i = 0;
+				for (;i < s.length(); i++) {
+					if(s.charAt(i) == '>') {
+						start = i;
+					}
+					else if(start != 0 && s.charAt(i) == '/') {
+						System.out.print(s.substring(start +1, i-1));
+						end = i;
+						break;
+					}
+				}
+
+				if(start != 0 && end != 0) {
+					for (; i < s.length(); i++) {
+						if (s.charAt(i) == '>') {
+							System.out.println(s.substring(end + 1, i));
+							break;
+						}
+					}
+				}
+
+
+//				counter += 1;
+//
+//				if (s.equals("\t<MEASUREMENT>")){ counter = 0; }
+//				else if (s.equals("\t</MEASUREMENT>")){}
 	        }
 
+			System.out.println(data);
 
 			// now close the socket connection
 			connection.close();
 			System.err.println("Connection closing");
-
-			// upping the semaphore.. since the connnection is gone....
-			Server.mijnSemafoor.verhoog();
 		}
 		catch (IOException ioe) { }
-		catch (InterruptedException ie) {}
 	}
 }
 
