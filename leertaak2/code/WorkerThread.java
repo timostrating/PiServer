@@ -1,11 +1,16 @@
+import com.sun.org.apache.xerces.internal.util.ShadowedSymbolTable;
+
+import java.lang.reflect.Array;
 import java.net.*;
 import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 //import java.util.concurrent.*;
 
 class WorkerThread implements Runnable  {
 	private Socket connection;
+
+	private final static boolean SHOW_DEBUG = false;
+	private final static boolean SHOW_ERROR = false;
 
 	public WorkerThread(Socket connection) {
 		this.connection = connection;
@@ -14,17 +19,42 @@ class WorkerThread implements Runnable  {
 	public void run() {
 		try {
 			String s;
-			System.err.println("Worker thread started");
+			print("Worker thread started\n");
 
-//			long startTime = System.currentTimeMillis();
 			BufferedReader bin = new BufferedReader(new InputStreamReader(connection.getInputStream()));
 
-//			int counter = 0;
-			List<String> data = new ArrayList<String>();
-			while ((s = bin.readLine()) != null) {
+			String[] input = new String[14];
 
-				int start =0;
-				int end=0;
+			Map<String, Integer> lookup = new HashMap<String, Integer>();
+			lookup.put("STN", 0); lookup.put("DATE", 1); lookup.put("TIME", 2); lookup.put("TEMP", 3);
+			lookup.put("DEWP", 4); lookup.put("STP", 5); lookup.put("SLP", 6); lookup.put("VISIB", 7);
+			lookup.put("WDSP", 8); lookup.put("PRCP", 9); lookup.put("SNDP", 10); lookup.put("FRSHTT", 11);
+			lookup.put("CLDC", 12); lookup.put("WNDDIR", 13);
+
+
+			int counter = 0;
+			List<String> data = new ArrayList<String>();
+
+			while ((s = bin.readLine()) != null) {
+				if (SHOW_DEBUG) data.add(s);
+//
+				if (s.equals("\t<MEASUREMENT>")) { counter = 0; continue;}
+				else if (s.equals("\t</MEASUREMENT>")) {
+					if (counter != 14) {
+						error("INCORRECT INPUT");
+						error(counter + Arrays.toString(input));
+					}
+
+					print(Arrays.toString(input));
+					if (SHOW_DEBUG) print(data);
+					if (SHOW_DEBUG) data.clear();
+					continue;
+				}
+
+				int start = 0; // TODO: we currently only parse xml that opens and closes a tag on the same line
+				int end = 0;
+				int lookup_index = 0;
+				String value = "";
 
 				int i = 0;
 				for (;i < s.length(); i++) {
@@ -32,7 +62,7 @@ class WorkerThread implements Runnable  {
 						start = i;
 					}
 					else if(start != 0 && s.charAt(i) == '/') {
-						System.out.print(s.substring(start +1, i-1));
+						value = s.substring(start +1, i-1);
 						end = i;
 						break;
 					}
@@ -41,30 +71,44 @@ class WorkerThread implements Runnable  {
 				if(start != 0 && end != 0) {
 					for (; i < s.length(); i++) {
 						if (s.charAt(i) == '>') {
-							System.out.println(s.substring(end + 1, i));
+							try {
+								lookup_index = lookup.get(s.substring(end + 1, i));
+							} catch (NullPointerException e) { error("UNSUPPORTED TAG in XML INPUT: " + s.substring(end + 1, i)); break; }
+
+							if (end - start <= 2) {
+								print("EMPTY DATA FOR " + s.substring(end + 1, i));
+							} else {
+								input[lookup_index] = value;
+								counter += 1;
+							}
 							break;
 						}
 					}
 				}
-
-
-//				counter += 1;
-//
-//				if (s.equals("\t<MEASUREMENT>")){ counter = 0; }
-//				else if (s.equals("\t</MEASUREMENT>")){}
 	        }
 
-			System.out.println(data);
+			print(Arrays.toString(input));
 
 			// now close the socket connection
 			connection.close();
-			System.err.println("Connection closing");
+			error("Connection closing");
 		}
-		catch (IOException ioe) { }
+		catch (IOException ignored) { }
+	}
+
+	private static void print(Object o) {
+		if (SHOW_DEBUG)
+			System.out.println(o);
+	}
+
+	private static void error(Object o) {
+		if (SHOW_ERROR)
+			System.err.println(o);
 	}
 }
 
 /*
+
 <!--Het weatherdata-element bevat meerdere measurement-elementen-->
 <WEATHERDATA>
 
