@@ -3,6 +3,9 @@ import com.sun.org.apache.xerces.internal.util.ShadowedSymbolTable;
 import java.lang.reflect.Array;
 import java.net.*;
 import java.io.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.util.*;
 //import java.util.concurrent.*;
 
@@ -11,25 +14,47 @@ class WorkerThread implements Runnable  {
 
 	private final static boolean SHOW_DEBUG = false;
 	private final static boolean SHOW_ERROR = false;
+	private final static boolean DATABASE = true;
 
 	public WorkerThread(Socket connection) {
 		this.connection = connection;
 	}
 
 	public void run() {
+		print("Worker thread started\n");
+
+		Connection conn = null;
+		String query = "insert into measurements (stn, date, time, temp, dewp, stp, slp, visib, wdsp, prcp, sndp, frshtt, cldc, wnddir) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
 		try {
+
+			if (DATABASE) Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+			if (DATABASE) conn = DriverManager.getConnection("jdbc:mysql://localhost/unwdmi?user=root&password=lol123");
+
+
+
 			String s;
-			print("Worker thread started\n");
 
 			BufferedReader bin = new BufferedReader(new InputStreamReader(connection.getInputStream()));
 
 			String[] input = new String[14];
 
 			Map<String, Integer> lookup = new HashMap<String, Integer>();
-			lookup.put("STN", 0); lookup.put("DATE", 1); lookup.put("TIME", 2); lookup.put("TEMP", 3);
-			lookup.put("DEWP", 4); lookup.put("STP", 5); lookup.put("SLP", 6); lookup.put("VISIB", 7);
-			lookup.put("WDSP", 8); lookup.put("PRCP", 9); lookup.put("SNDP", 10); lookup.put("FRSHTT", 11);
-			lookup.put("CLDC", 12); lookup.put("WNDDIR", 13);
+			lookup.put("STN", 0);
+			lookup.put("DATE", 1);
+			lookup.put("TIME", 2);
+			lookup.put("TEMP", 3);
+			lookup.put("DEWP", 4);
+			lookup.put("STP", 5);
+			lookup.put("SLP", 6);
+			lookup.put("VISIB", 7);
+			lookup.put("WDSP", 8);
+			lookup.put("PRCP", 9);
+			lookup.put("SNDP", 10);
+			lookup.put("FRSHTT", 11);
+			lookup.put("CLDC", 12);
+			lookup.put("WNDDIR", 13);
+
 
 
 			int counter = 0;
@@ -46,8 +71,17 @@ class WorkerThread implements Runnable  {
 					}
 
 					print(Arrays.toString(input));
-					if (SHOW_DEBUG) print(data);
+					print(data);
 					if (SHOW_DEBUG) data.clear();
+
+					if (DATABASE) {
+						PreparedStatement preparedStmt = conn.prepareStatement(query);
+						for (int i=1; i <= input.length; i++)
+							preparedStmt.setString (i, input[i-1]);
+
+						preparedStmt.execute();
+					}
+
 					continue;
 				}
 
@@ -90,10 +124,11 @@ class WorkerThread implements Runnable  {
 			print(Arrays.toString(input));
 
 			// now close the socket connection
+			conn.close();
 			connection.close();
 			error("Connection closing");
 		}
-		catch (IOException ignored) { }
+		catch (Exception e) { System.err.println("Exception: " + Arrays.toString(e.getStackTrace()) + e.getMessage());}
 	}
 
 	private static void print(Object o) {
@@ -110,25 +145,25 @@ class WorkerThread implements Runnable  {
 /*
 
 <!--Het weatherdata-element bevat meerdere measurement-elementen-->
-<WEATHERDATA>
+    <WEATHERDATA>
 
-<MEASUREMENT>
-	<STN>123456</STN> 			<!-- Het station waarvan deze gegevens zijn  -->
-	<DATE>2009-09-13</DATE>		<!-- Datum van versturen van deze gegevens, formaat: yyyy-mm-dd -->
-	<TIME>15:59:46</TIME> 		<!-- Tijd van versturen van deze gegevens, formaat: hh:mm:ss -->
-	<TEMP>-60.1</TEMP> 			<!-- Temperatuur in graden Celsius, geldige waardes van -9999.9 t/m 9999.9 met 1 decimaal -->
-	<DEWP>-58.1</DEWP> 			<!-- Dauwpunt in graden Celsius, geldige waardes van -9999.9 t/m 9999.9 met 1 decimaal -->
-	<STP>1034.5</STP> 			<!-- Luchtdruk op stationsniveau in millibar, geldige waardes van 0.0 t/m 9999.9 met 1 decimaal -->
-	<SLP>1007.6</SLP> 			<!-- Luchtdruk op zeeniveau in millibar, geldige waardes van 0.0 t/m 9999.9 met 1 decimaal -->
-	<VISIB>123.7</VISIB>		<!-- Zichtbaarheid in kilometers, geldige waardes van 0.0 t/m 999.9 met 1 decimaal -->
-	<WDSP>10.8</WDSP> 			<!-- Windsnelheid in kilometers per uur, geldige waardes van 0.0 t/m 999.9 met 1 decimaal-->
-	<PRCP>11.28</PRCP>			<!-- Neerslag in centimeters, geldige waardes van 0.00 t/m 999.99 met 2 decimalen -->
-	<SNDP>11.1</SNDP>			<!-- Gevallen sneeuw in centimeters, geldige waardes van -9999.9 t/m 9999.9 met 1 decimaal -->
-	<FRSHTT>010101</FRSHTT>		<!-- Binair gevroren, geregend, gesneeuwd, gehageld, onweer, Tornado/windhoos -->
-	<CLDC>87.4</CLDC>			<!-- Bewolking in procenten, geldige waardes van 0.0 t/m 99.9 met 1 decimaal -->
-	<WNDDIR>342</WNDDIR>		<!-- Windrichting in graden, geldige waardes van 0 t/m 359 alleen gehele getallen -->
-</MEASUREMENT>
+    10 x  <MEASUREMENT>
+        <STN>123456</STN>
+        <DATE>2009-09-13</DATE>
+        <TIME>15:59:46</TIME>
+        <TEMP>-60.1</TEMP>
+        <DEWP>-58.1</DEWP>
+        <STP>1034.5</STP>
+        <SLP>1007.6</SLP>
+        <VISIB>123.7</VISIB>
+        <WDSP>10.8</WDSP>
+        <PRCP>11.28</PRCP>
+        <SNDP>11.1</SNDP>
+        <FRSHTT>010101</FRSHTT>
+        <CLDC>87.4</CLDC>
+        <WNDDIR>342</WNDDIR>
+    </MEASUREMENT>
 
-</WEATHERDATA>
+    </WEATHERDATA>
 
 */

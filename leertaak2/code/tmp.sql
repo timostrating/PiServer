@@ -1,3 +1,5 @@
+
+-- This is our table
 CREATE TABLE `unwdmi`.`measurements` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `stn` CHAR(10) NULL COMMENT 'Het station waarvan deze gegevens zijn',
@@ -15,3 +17,10 @@ CREATE TABLE `unwdmi`.`measurements` (
   `cldc` CHAR(10) NULL COMMENT 'Bewolking in procenten, geldige waardes van 0.0 t/m 99.9 met 1 decimaal',
   `wnddir` CHAR(3) NULL COMMENT 'Windrichting in graden, geldige waardes van 0 t/m 359 alleen gehele getallen',
   PRIMARY KEY (`id`));
+
+
+-- The default allowed connections are around 150
+show variables like '%connections';
+
+-- Every thread creates a connection so we require more connections to the database
+set global max_connections = 800;

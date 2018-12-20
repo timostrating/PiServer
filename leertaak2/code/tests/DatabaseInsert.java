@@ -5,20 +5,14 @@ import java.sql.*;
 public class DatabaseInsert {
     public static void main(String args[]){
         Connection conn = null;
-        Statement stmt = null;
-        ResultSet rs = null;
 
         try{
             Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
 
             conn = DriverManager.getConnection("jdbc:mysql://localhost/unwdmi?user=root&password=lol123");
 
-            stmt = conn.createStatement();
-//            rs = stmt.executeQuery("SELECT * FROM artist");
+            String query = "insert into measurements (stn, date, time, temp, dewp, stp, slp, visib, wdsp, prcp, sndp, frshtt, cldc, wnddir) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-            String query = " insert into measurements (stn, date, time, temp, dewp, stp, slp, visib, wdsp, prcp, sndp, frshtt, cldc, wnddir) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-
-            // create the mysql insert preparedstatement
             PreparedStatement preparedStmt = conn.prepareStatement(query);
             preparedStmt.setString (1, "123456"); // stn
             preparedStmt.setString (2, "2009-09-13"); // date
@@ -35,7 +29,6 @@ public class DatabaseInsert {
             preparedStmt.setString (13, "87.4"); // cldc,
             preparedStmt.setString (14, "342"); // wnddi
 
-            // execute the preparedstatement
             preparedStmt.execute();
 
             conn.close();
