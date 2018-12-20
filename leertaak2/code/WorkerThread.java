@@ -1,13 +1,9 @@
-import com.sun.org.apache.xerces.internal.util.ShadowedSymbolTable;
-
-import java.lang.reflect.Array;
 import java.net.*;
 import java.io.*;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.util.*;
-//import java.util.concurrent.*;
 
 class WorkerThread implements Runnable  {
 	private Socket connection;
@@ -25,12 +21,13 @@ class WorkerThread implements Runnable  {
 
 		Connection conn = null;
 		String query = "insert into measurements (stn, date, time, temp, dewp, stp, slp, visib, wdsp, prcp, sndp, frshtt, cldc, wnddir) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+		final int batchSize = 10; //Batch size is important
+		int insertCount=0;
 
 		try {
 
-			if (DATABASE) Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+			if (DATABASE) Class.forName("com.mysql.cj.jdbc.Driver").getDeclaredConstructor().newInstance();
 			if (DATABASE) conn = DriverManager.getConnection("jdbc:mysql://localhost/unwdmi?user=root&password=lol123");
-
 
 
 			String s;
@@ -57,29 +54,22 @@ class WorkerThread implements Runnable  {
 
 
 
-			int counter = 0;
-			List<String> data = new ArrayList<String>();
-
+//			int counter = 0;
 			while ((s = bin.readLine()) != null) {
-				if (SHOW_DEBUG) data.add(s);
 //
-				if (s.equals("\t<MEASUREMENT>")) { counter = 0; continue;}
-				else if (s.equals("\t</MEASUREMENT>")) {
-					if (counter != 14) {
-						error("INCORRECT INPUT");
-						error(counter + Arrays.toString(input));
-					}
-
-					print(Arrays.toString(input));
-					print(data);
-					if (SHOW_DEBUG) data.clear();
+//				if (s.equals("\t</MEASUREMENT>")) { counter++; continue;}
+				if (s.equals("\t</MEASUREMENT>")) {
+//					counter %= 10;
 
 					if (DATABASE) {
 						PreparedStatement preparedStmt = conn.prepareStatement(query);
 						for (int i=1; i <= input.length; i++)
 							preparedStmt.setString (i, input[i-1]);
 
-						preparedStmt.execute();
+						preparedStmt.addBatch();
+						if (++insertCount % batchSize == 0) {
+							preparedStmt.executeBatch();
+						}
 					}
 
 					continue;
@@ -113,7 +103,7 @@ class WorkerThread implements Runnable  {
 								print("EMPTY DATA FOR " + s.substring(end + 1, i));
 							} else {
 								input[lookup_index] = value;
-								counter += 1;
+//								counter += 1;
 							}
 							break;
 						}

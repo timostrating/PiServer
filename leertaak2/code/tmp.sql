@@ -23,4 +23,4 @@ CREATE TABLE `unwdmi`.`measurements` (
 show variables like '%connections';
 
 -- Every thread creates a connection so we require more connections to the database
-set global max_connections = 800;
+set global max_connections = 900;
