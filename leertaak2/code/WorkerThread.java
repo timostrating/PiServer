@@ -26,7 +26,7 @@ class WorkerThread implements Runnable  {
 
 		try {
 
-			if (DATABASE) Class.forName("com.mysql.cj.jdbc.Driver").getDeclaredConstructor().newInstance();
+			if (DATABASE) Class.forName("com.mysql.jdbc.Driver").newInstance();
 			if (DATABASE) conn = DriverManager.getConnection("jdbc:mysql://localhost/unwdmi?user=root&password=lol123");
 
 
